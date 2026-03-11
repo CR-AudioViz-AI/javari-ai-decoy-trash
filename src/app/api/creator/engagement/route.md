@@ -1,83 +1,81 @@
-# Build Creator Engagement Metrics API
+# Build Creator Engagement Analytics API
 
-```markdown
-# Creator Engagement Metrics API
+# Creator Engagement Analytics API
 
 ## Purpose
-The Creator Engagement Metrics API provides functionalities to retrieve and manage engagement metrics for content creators. It enables developers to query engagement statistics and track engagement events, such as views and likes, across various content types.
+The Creator Engagement Analytics API provides insights into creator engagement metrics, audience behavior, and content optimization recommendations. It allows developers to track and analyze engagement events for content such as audio visuals, livestreams, and uploads.
 
 ## Usage
-This API is designed to be used within Next.js applications, utilizing Supabase for data storage and Redis for caching. The provided routes allow for retrieving engagement metrics and tracking user engagement events.
+The API can be utilized in a Next.js application to handle requests related to creator engagement analytics data. It connects to Supabase for data storage and Upstash Redis for caching, ensuring efficient data retrieval and processing.
 
-## Endpoints
-1. **Get Engagement Metrics**
-2. **Track Engagement Events**
+## Parameters/Props
+The API accepts engagement event data and allows for analytics queries with the following schemas:
 
-### 1. Get Engagement Metrics
-- **Method:** GET
-- **Route:** `/api/creator/engagement`
+### Engagement Event Schema
+```typescript
+const engagementEventSchema = z.object({
+  contentId: z.string().uuid(), // Unique identifier for the content
+  eventType: z.enum(['view', 'like', 'share', 'comment', 'watch_time', 'complete']), // Type of engagement event
+  userId: z.string().uuid().optional(), // Identifier for the user (optional)
+  sessionId: z.string(), // ID of the session
+  timestamp: z.number(), // Event timestamp
+  metadata: z.record(z.any()).optional(), // Additional event metadata (optional)
+  value: z.number().optional() // Event-specific value (optional)
+});
+```
 
-#### Parameters
-- `creatorId` (string, required): UUID of the content creator.
-- `timeRange` (string, optional): Defines the time period for the metrics. Options: `24h`, `7d`, `30d`, `90d`. Default is `30d`.
-- `contentType` (string, optional): Type of content to retrieve metrics for. Options: `all`, `audio`, `video`, `live`. Default is `all`.
-- `metrics` (array, optional): Types of metrics to retrieve. Options: `performance`, `audience`, `conversion`, `insights`. Default is `performance`.
+### Analytics Query Schema
+```typescript
+const analyticsQuerySchema = z.object({
+  period: z.enum(['1h', '24h', '7d', '30d', '90d']).default('24h'), // Time period for analytics
+  contentType: z.enum(['audio_viz', 'livestream', 'upload', 'all']).default('all'), // Type of content
+  groupBy: z.enum(['hour', 'day', 'week']).optional(), // Aggregation granularity (optional)
+});
+```
 
-#### Return Values
-Returns an object containing:
-- `contentPerformance`: Metrics related to content performance.
-- `audienceEngagement`: Data about audience engagement.
-- `revenueConversion`: Insights into revenue conversion rates.
-- `monetizationInsights`: Array of monetization opportunities.
-
-### 2. Track Engagement Events
-- **Method:** POST
-- **Route:** `/api/creator/engagement/track`
-
-#### Parameters/Props
-- `creatorId` (string, required): UUID of the content creator.
-- `contentId` (string, required): UUID of the specific piece of content.
-- `eventType` (string, required): Type of event. Options: `view`, `like`, `share`, `comment`, `subscribe`, `purchase`, `tip`.
-- `userId` (string, optional): UUID of the user. Defaults to `undefined`.
-- `sessionId` (string, required): Unique session identifier.
-- `metadata` (object, optional): Additional data related to the event. Defaults to `undefined`.
-- `timestamp` (string, optional): Event timestamp in ISO 8601 format. Defaults to current time.
-
-#### Return Values
-Returns a confirmation of the tracked event, including:
-- Status of the tracking operation.
-- Any relevant error messages.
+## Return Values
+- For engagement events, the API returns a success message upon storing the event data.
+- For analytics queries, it returns an object containing:
+  - `engagementMetrics`: Metrics such as total engagements, views, likes, shares, comments, average watch time, engagement rate, unique viewers, and retention rate.
+  - `audienceBehavior`: Data on audience demographics, engagement patterns, and retention.
+  - `contentOptimization`: Recommendations, best-performing content details, and actionable insights.
 
 ## Examples
-
-### Get Engagement Metrics
-```javascript
-const response = await fetch('/api/creator/engagement?creatorId=123e4567-e89b-12d3-a456-426614174000');
-const data = await response.json();
-console.log(data);
-```
-
-### Track Engagement Event
-```javascript
-const eventData = {
-  creatorId: '123e4567-e89b-12d3-a456-426614174000',
-  contentId: '987e6543-e21b-45d6-a789-1234567890ab',
-  eventType: 'like',
-  sessionId: 'session_id_example'
+### Storing Engagement Event
+```typescript
+const event = {
+  contentId: "123e4567-e89b-12d3-a456-426614174000",
+  eventType: "view",
+  userId: "987e6543-e21c-32d4-b456-426614174000",
+  sessionId: "session123",
+  timestamp: Date.now(),
+  metadata: { someKey: 'someValue' },
+  value: 1
 };
 
-const response = await fetch('/api/creator/engagement/track', {
+// Call the API to store the event (example)
+await fetch('/api/creator/engagement', {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(eventData),
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(event)
 });
-const confirmation = await response.json();
-console.log(confirmation);
 ```
 
-## Notes
-Ensure that the necessary environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `REDIS_URL`) are set up before using this API.
+### Querying Analytics
+```typescript
+const query = {
+  period: "7d",
+  contentType: "audio_viz",
+  groupBy: "day"
+};
 
+// Call the API to retrieve analytics
+const response = await fetch('/api/creator/engagement/analytics', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(query)
+});
+const data = await response.json();
 ```
+
+This API is aimed at providing robust engagement analytics to enhance content-related strategies for creators.
